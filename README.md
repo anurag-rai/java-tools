@@ -1,38 +1,56 @@
 # java-tools
 
-mvn package
+The `Tail` class provides the barebone functionality of the Unix `tail` command.
 
-jar will be created in /target/
+## Installation
 
-cp *.jar /tmp/
+Download the source code.
 
-cd /tmp
+Change directory to `/path/to/project/`.
 
-java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.FileCreator
+Run `mvn package`. A jar will be created in `path/to/project/target/`.
 
-A file named test will be created
-
-java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.Tail test 11
+The jar does not have a manifest file so the class needs to be specified.
 
 
+## Usage
+
+`java -cp <jarfile> com.anurag.cmds.Tail <filename> <integer>`
+
+### Example 
+
+We will be copying the jar to a temporary folder.
+
+`cp /path/to/project/target/*.jar /tmp/`
+
+`cd /tmp`
+
+Create a file (default name `test`) in the directory.
+
+`java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.FileCreator`
+
+Run the `Tail` command in the created file.
+
+`java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.Tail test 11`
 
 
-Learnings:
+## Learnings
 
-Implementation:
-https://www.geeksforgeeks.org/implement-your-own-tail-read-last-n-lines-of-a-huge-file/
-https://codereview.stackexchange.com/questions/79039/get-the-tail-of-a-file-the-last-10-lines
+### Implementation Guidelines:
 
+- [GeeksForGeeks](https://www.geeksforgeeks.org/implement-your-own-tail-read-last-n-lines-of-a-huge-file/)
+- [CodeReview](https://codereview.stackexchange.com/questions/79039/get-the-tail-of-a-file-the-last-10-lines)
 
-- byte is unsigned 8 bits
-- byte to char conversion
-- randomaccessfile https://docs.oracle.com/javase/8/docs/api/java/io/RandomAccessFile.html#writeBytes-java.lang.String-
+### Caveats
 
-- generate random numbers
-- throw vs throws
+- `byte` is unsigned 8 bits in Java
+- `byte` to `char` conversion
+- [RandomAccessFile](https://docs.oracle.com/javase/8/docs/api/java/io/RandomAccessFile.html#writeBytes-java.lang.String-)
+- Generate random numbers (`Random` vs `Math.Random`)
+- `throw` vs `throws`
 - Create object only if valid arguments (Proper code structure)
-- Check runtime of a method
-- maven configuration ( 5 minute maven setup) 
-	- https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html
-	- http://www.mkyong.com/maven/how-to-create-a-java-project-with-maven/
-- running a jar file
+- Check runtime of a method (`Duration`, `Instance`)
+- Maven configuration ( 5 minute maven setup) 
+	- [Apache doc](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
+	- [Mkyong](http://www.mkyong.com/maven/how-to-create-a-java-project-with-maven/)
+- Running a jar file
