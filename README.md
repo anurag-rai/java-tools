@@ -2,6 +2,10 @@
 
 The `Tail` class in this branch provides the barebone functionality of the Unix `tail -f` command and continues file read from the last active position. To store the last active position a file named "<filename>.record" is created to store the byte offset for the application.
 
+## Demo
+
+[![Tail -f Demo](https://img.youtube.com/vi/uoYyIb8VnXc/0.jpg)](https://www.youtube.com/watch?v=uoYyIb8VnXc "Tail -f Demo")
+
 ## Installation
 
 Download the source code.
