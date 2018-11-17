@@ -1,6 +1,6 @@
 # java-tools
 
-The `Tail` class provides the barebone functionality of the Unix `tail` command.
+The `Tail` class in this branch provides the barebone functionality of the Unix `tail -f` command and continues file read from the last active position. To store the last active position a file named "<filename>.record" is created to store the byte offset for the application.
 
 ## Installation
 
@@ -15,7 +15,7 @@ The jar does not have a manifest file so the class needs to be specified.
 
 ## Usage
 
-`java -cp <jarfile> com.anurag.cmds.Tail <filename> <integer>`
+`java -cp <jarfile> com.anurag.cmds.Tail <filename>`
 
 ### Example 
 
@@ -31,26 +31,18 @@ Create a file (default name `test`) in the directory.
 
 Run the `Tail` command in the created file.
 
-`java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.Tail test 11`
+`java -cp cmds-1.0-SNAPSHOT.jar com.anurag.cmds.Tail test`
 
 
 ## Learnings
 
 ### Implementation Guidelines:
 
-- [GeeksForGeeks](https://www.geeksforgeeks.org/implement-your-own-tail-read-last-n-lines-of-a-huge-file/)
-- [CodeReview](https://codereview.stackexchange.com/questions/79039/get-the-tail-of-a-file-the-last-10-lines)
+- [Java Watch Service](https://docs.oracle.com/javase/tutorial/essential/io/notification.html)
+- [Guide to WatchService](https://www.baeldung.com/java-nio2-watchservice)
+- [Java File Handling](https://stackabuse.com/reading-and-writing-files-in-java/)
 
 ### Caveats
 
-- `byte` is unsigned 8 bits in Java
-- `byte` to `char` conversion
-- [RandomAccessFile](https://docs.oracle.com/javase/8/docs/api/java/io/RandomAccessFile.html#writeBytes-java.lang.String-)
-- Generate random numbers (`Random` vs `Math.Random`)
-- `throw` vs `throws`
-- Create object only if valid arguments (Proper code structure)
-- Check runtime of a method (`Duration`, `Instance`)
-- Maven configuration ( 5 minute maven setup) 
-	- [Apache doc](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
-	- [Mkyong](http://www.mkyong.com/maven/how-to-create-a-java-project-with-maven/)
-- Running a jar file
+- Currently only supports files in the current directory where the jar is run
+- Does not support Windows file directory structure
