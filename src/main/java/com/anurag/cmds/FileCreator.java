@@ -33,20 +33,18 @@ public class FileCreator {
 	}
 
 	public void createFile(String filePath)throws IOException {
+		@SuppressWarnings("resource")
 		RandomAccessFile raf = new RandomAccessFile(filePath, "rw");
 
 		int first = 1;	//10^5
-		int second = this.ran.nextInt(900001) + 100000;	// 10^5 - 10^6
-		// int first = 10;
-		// int second = 20;
+//		int second = this.ran.nextInt(900001) + 100000;	// 10^5 - 10^6
+		int second = 10;
 		long fileLength = (long)first * second;
 		System.out.println(" ]] Creating a file with " + fileLength + " lines ...");
 		StringBuilder line;
-		long count = 1;
 		Instant start = java.time.Instant.now();
 		for ( int i = 0; i < first; i++ ) {
 			for ( int j = 0; j < second; j++ ) {
-				// System.out.println("creating line number: " + count++);
 				line = createRandomString();
 				line.append('\n');
 				raf.writeBytes(line.toString());
@@ -60,7 +58,8 @@ public class FileCreator {
 
 	public StringBuilder createRandomString() {
 		StringBuilder salt = new StringBuilder();
-        int randomStringLength = this.ran.nextInt(901) + 100;	//create a random string of length 100-1000
+//        int randomStringLength = this.ran.nextInt(901) + 100;	//create a random string of length 100-1000
+        int randomStringLength = this.ran.nextInt(50) + 1;
         int currentLength = 0;
         while (currentLength < randomStringLength) {
             int index = (int) (ran.nextFloat() * this.candidatesLength);

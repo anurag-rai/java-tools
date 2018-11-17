@@ -1,31 +1,41 @@
 package com.anurag.cmds;
 
-import java.io.*;
-import java.time.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 
 public class Tail {
 
 	RandomAccessFile raf;
 	int lines;
-	String filePath;
+	Path filePath;
+	String fileName;
+	long currentPointer;
 
-	public Tail(String[] args)throws IllegalArgumentException {
+	public Tail(String[] args) throws IllegalArgumentException {
 		try {
-			validate(args);	
+			this.currentPointer = 0;
+			validate(args);
 		} catch (IllegalArgumentException e) {
 			throw new IllegalArgumentException(e.getMessage());
 		}
 	}
 
-	public static void main(String[] args) { 
+	public static void main(String[] args) {
 		try {
 			Tail o = new Tail(args);
-			Instant start = java.time.Instant.now();
-			o.tail();
-			Instant end = java.time.Instant.now();
-			Duration between = java.time.Duration.between(start, end);
-			System.out.println(o.formatDuration(between));
-			
+			o.tailf();
 		} catch (IllegalArgumentException e) {
 			System.out.println(" >> Error: " + e.getMessage());
 		} catch (IOException e) {
@@ -36,72 +46,115 @@ public class Tail {
 		}
 	}
 
-	public void tail()throws IOException {
-		long length = this.raf.length();	// Can be the bottleneck depending on implementation
-		// System.out.println("Length: " +  this.raf.length());
-		// System.out.println("File Offset: " + this.raf.getFilePointer());
-		long pos = length-1;
-		int count = 0;
-		while ( pos >= 0 ) {
-			raf.seek(pos);
-			byte b = raf.readByte();
-			char c = (char) (b & 0xFF);
-			if ( c == '\n') {
-				count++;
-				if ( count == this.lines )
-					break;	
-			}
-			pos--;
-		}
-		pos++;
-		raf.seek(pos);
-		while ( pos < length ) {
+	public void tailf() throws IOException {
+		long length = this.raf.length();
+		// System.out.println("Seeking to update ... ");
+		// System.out.println("File length: " + length);
+		// System.out.println("Initial : " + this.currentPointer);
+		raf.seek(this.currentPointer);
+		while (this.currentPointer < length) {
 			byte b = raf.readByte();
 			char c = (char) (b & 0xFF);
 			System.out.print(c);
-			pos++;
+			this.currentPointer++;
+		}
+		// System.out.println("Finally: " + this.currentPointer);
+		writePointerDataToFile();
+		// System.out.println("Listening ... ");
+		Path path = this.filePath;
+		WatchService watcher = path.getFileSystem().newWatchService();
+		path.register(watcher, StandardWatchEventKinds.ENTRY_MODIFY);
+		for (;;) {
+			WatchKey key;
+			try {
+				key = watcher.take();
+			} catch (InterruptedException x) {
+				return;
+			}
+
+			for (WatchEvent<?> event : key.pollEvents()) {
+				WatchEvent.Kind<?> kind = event.kind();
+				if (kind == StandardWatchEventKinds.OVERFLOW || kind == StandardWatchEventKinds.ENTRY_CREATE
+						|| kind == StandardWatchEventKinds.ENTRY_DELETE) {
+					continue;
+				}
+
+				@SuppressWarnings("unchecked")
+				WatchEvent<Path> ev = (WatchEvent<Path>) event;
+				Path filename = ev.context();
+				if (filename.toString().equals(this.fileName)) {
+					length = this.raf.length();
+					while (this.currentPointer < length) {
+						byte b = raf.readByte();
+						char c = (char) (b & 0xFF);
+						System.out.print(c);
+						this.currentPointer++;
+					}
+					writePointerDataToFile();
+				}
+			}
+			boolean valid = key.reset();
+			if (!valid) {
+				break;
+			}
+		}
+
+	}
+
+	public void writePointerDataToFile() {
+		String filename = this.fileName + ".record";
+		try {
+			// Assume default encoding.
+			FileWriter fileWriter = new FileWriter(filename);
+			BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+			bufferedWriter.write(Long.toString(this.currentPointer));
+			bufferedWriter.newLine();
+			bufferedWriter.close();
+		} catch (IOException ex) {
+			System.out.println("Error writing to file '" + fileName + "'");
 		}
 	}
 
-
-	public void validate(String[] args)throws IllegalArgumentException {
-		// TODO: Can implement a default value for lines (`tail` does a default 10 lines)
-		if ( args.length != 2 ) {
-			throw new IllegalArgumentException("Usage: java Tail [file] #");
+	public void validate(String[] args) throws IllegalArgumentException {
+		if (args.length != 1) {
+			throw new IllegalArgumentException("Usage: java Tail [file]");
 		}
 		validateFilePath(args[0]);
-		validateLines(args[1]);
 	}
 
 	public void validateFilePath(String filePath) {
 		try {
 			raf = new RandomAccessFile(new File(filePath), "r");
-		} catch (Exception e) {
-			throw new IllegalArgumentException (e.getMessage());
-		}
-		
-	}
+			// TODO: Handle other relative paths
+			// "test" "./test" "./dir/test" "/dir/dir/test" "../../dir/test"
+			String[] splitted = filePath.split("/");
+			if (splitted.length == 1) {
+				this.fileName = splitted[0];
+				this.filePath = Paths.get(".");
+				try {
+					FileReader fileReader = new FileReader(this.fileName + ".record");
 
-	public void validateLines(String argument) {
-		try { 
-			int lines = Integer.parseInt(argument);
-			if ( lines <= 0 ) {
-				throw new IllegalArgumentException (lines + " is not a positive integer");
+					BufferedReader bufferedReader = new BufferedReader(fileReader);
+					String line;
+					while ((line = bufferedReader.readLine()) != null) {
+//						System.out.println("Reading from record file: " + line);
+						this.currentPointer = Integer.parseInt(line);
+					}
+					bufferedReader.close();
+//					System.out.println("Setting pointer to : " + this.currentPointer);
+				} catch (FileNotFoundException ex) {
+					return;
+				} catch (IOException ex) {
+					System.out.println("Error reading file '" + fileName + "'");
+				}
+			} else {
+				throw new IllegalArgumentException("Specify only filename. Cannot parse other paths for now.");
 			}
-			this.lines = lines;
-		} catch (NumberFormatException e) {
-			throw new IllegalArgumentException (argument + " is not a valid integer");
+
+		} catch (Exception e) {
+			throw new IllegalArgumentException(e.getMessage());
 		}
+
 	}
 
-	public String formatDuration(Duration duration) {
-	    long seconds = duration.getSeconds();
-	    long absSeconds = Math.abs(seconds);
-	    String positive = String.format(
-	        "%d:%02d:%02d",
-	        absSeconds / 3600,
-	        (absSeconds % 3600) / 60,
-	        absSeconds % 60);
-	    return seconds < 0 ? "-" + positive : positive;
-	}
 }
